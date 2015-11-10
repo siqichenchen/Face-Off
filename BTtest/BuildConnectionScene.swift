@@ -26,8 +26,7 @@ class BuildConnectionScene: SKScene {
         
         background.position = CGPoint(x: frame.midX, y: frame.midY)
         background.scene?.size = frame.size
-        background.xScale = 0.45
-        background.yScale = 0.45
+        background.setScale(0.5)
         background.zPosition = -100
         
         addChild(background)
@@ -154,7 +153,6 @@ class BuildConnectionScene: SKScene {
             if 返回按鈕.containsPoint(location){
                 返回按鈕.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
                 let nextScene = MainScene(size: scene!.size)
-                nextScene.finalImg = Img
                 transitionForNextScene(nextScene)
             }
         }

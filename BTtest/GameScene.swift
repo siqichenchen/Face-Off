@@ -58,13 +58,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     }
     
-    /*
-    // Bullet type
-    enum BulletType {
-        case ShipFired
-        case InvaderFired
-    }
-*/
+
     
     // Invader movement direction
     enum InvaderMovementDirection {
@@ -131,6 +125,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Object Lifecycle Management
     
     var ship: SKSpriteNode! = nil
+    var shipVelocity = 500.0
     
     // 集氣用---------------------
     var node: SKSpriteNode? = nil
@@ -160,6 +155,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var timer2 : NSTimer! = nil
     var mpTimer : NSTimer! = nil
     var oppoMpTimer : NSTimer! = nil
+    
+    var burnTimer : NSTimer! = nil
+    var frozenTimer : NSTimer! = nil
+
 
     var emitter :SKEmitterNode! = nil
     var profemitter :SKEmitterNode! = nil
@@ -182,6 +181,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var opponentMpValue : CGFloat = 0.0
 
     let kBar = "ship"
+    var oppoPosHint : SKSpriteNode! = nil
     var ultimateHint : SKSpriteNode! = nil
 
     
@@ -208,6 +208,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Setup your scene here */
         
         
+        
+        burnTimerStart()
+        
+        frozenTimerStart()
+        
+        
+        
         if (!self.contentCreated) {
             self.createContent()
             self.contentCreated = true
@@ -227,6 +234,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.initEnergyBlastScene()
         animation = SKAction.animateWithTextures(energyBlastAnim, timePerFrame: 0.1)
         
+        oppoPosHint = SKSpriteNode(imageNamed: "prof")
+        oppoPosHint.position = CGPoint(x: -100,y: -100)
+        oppoPosHint.xScale = 0.3
+        oppoPosHint.yScale = 0.3
+        self.addChild(oppoPosHint)
+
+        
         // Watch Bluetooth connection
         
         NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("beginFight"), name: "beginFight", object: nil)
@@ -240,7 +254,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("hitOpponent:"), name: "hitOpponent", object: nil)
         
         NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("bonusHitOpponent:"), name: "bonusHitOpponent", object: nil)
-
+        
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("realTimePos:"), name: "realTimePos", object: nil)
         
         //opponentlatesHealth = (self.view?.bounds.size.height)!
         
@@ -310,7 +325,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         physicsBody!.categoryBitMask = kSceneEdgeCategory
         
-        //setupInvaders()
         
         setupShip()
         
@@ -347,93 +361,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    
-    func loadInvaderTexturesOfType(invaderType: InvaderType) -> Array<SKTexture> {
-        
-        var prefix: String
-        
-        switch invaderType {
-        case .A:
-            prefix = "InvaderA"
-        case .B:
-            prefix = "InvaderB"
-        case .C:
-            prefix = "InvaderC"
-        default:
-            prefix = "InvaderC"
-        }
-        
-        // 1
-        return [SKTexture(imageNamed: String(format: "%@_00.png", prefix)),
-            SKTexture(imageNamed: String(format: "%@_01.png", prefix))]
-    }
-    
-    func makeInvaderOfType(invaderType: InvaderType) -> SKNode {
-        
-        let invaderTextures = self.loadInvaderTexturesOfType(invaderType)
-        
-        // 2
-        let invader = SKSpriteNode(texture: invaderTextures[0])
-        invader.name = kInvaderName
-        
-        // 3
-        invader.runAction(SKAction.repeatActionForever(SKAction.animateWithTextures(invaderTextures, timePerFrame: self.timePerMove)))
-        
-        // invaders' bitmasks setup
-        invader.physicsBody = SKPhysicsBody(rectangleOfSize: invader.frame.size)
-        invader.physicsBody!.dynamic = false
-        invader.physicsBody!.categoryBitMask = kInvaderCategory
-        invader.physicsBody!.contactTestBitMask = 0x0
-        invader.physicsBody!.collisionBitMask = 0x0
-        
-        return invader
-    }
-    
-    
-    func setupInvaders() {
-        
-        // 1
-        let baseOrigin = CGPointMake(self.size.width / 3, 180)
-        
-        for var row = 1; row <= kInvaderRowCount; row++ {
-            
-            // 2
-            var invaderType: InvaderType
-            
-            if row % 3 == 0 {
-                
-                invaderType = .A
-                
-            } else if row % 3 == 1 {
-                
-                invaderType = .B
-                
-            } else {
-                
-                invaderType = .C
-            }
-            
-            // 3
-            let invaderPositionY = CGFloat(row) * (kInvaderSize.height * 2) + baseOrigin.y
-            
-            var invaderPosition = CGPointMake(baseOrigin.x, invaderPositionY)
-            
-            // 4
-            for var col = 1; col <= kInvaderColCount; col++ {
-                
-                // 5
-                let invader = self.makeInvaderOfType(invaderType)
-                invader.position = invaderPosition
-                
-                self.addChild(invader)
-                
-                invaderPosition = CGPointMake(invaderPosition.x + kInvaderSize.width + kInvaderGridSpacing.width, invaderPositionY)
-            }
-            
-        }
-        
-    }
-    
+ 
     
     
     func setupHealthBar() {
@@ -555,11 +483,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func makeShip() -> SKSpriteNode {
         
-        //let ship = SKSpriteNode(imageNamed: "prof.png")
-        let texture1 = SKTexture(image:Img)
-        let ship = SKSpriteNode(texture:texture1)
-        //ship.color = UIColor.greenColor()
+        let texture = SKTexture(image: Img)
+        let ship = SKSpriteNode(texture: texture)
+        ship.color = UIColor.greenColor()
         ship.name = kShipName
+        ship.xScale = 0.2
+        ship.yScale = 0.2
         
         // Physic
         // 1
@@ -575,11 +504,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // ship's bitmask setup
         // 1
-       ship.physicsBody!.categoryBitMask = kShipCategory
+        ship.physicsBody!.categoryBitMask = kShipCategory
         // 2
-       ship.physicsBody!.contactTestBitMask = 0x0
+        ship.physicsBody!.contactTestBitMask = 0x0
         // 3
-       ship.physicsBody!.collisionBitMask = kSceneEdgeCategory
+        ship.physicsBody!.collisionBitMask = kSceneEdgeCategory
         ship.zPosition = 1000
         
         return ship
@@ -617,37 +546,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         return bar
     }
     
-    func setupHud() {
-        
-        let scoreLabel = SKLabelNode(fontNamed: "Courier")
-        
-        // 1
-        scoreLabel.name = kScoreHudName
-        scoreLabel.fontSize = 25
-        
-        // 2
-        scoreLabel.fontColor = SKColor.greenColor()
-        scoreLabel.text = String(format: "Score: %04u", 0)
-        
-        // 3
-        //print(self.size.height)
-        scoreLabel.position = CGPointMake(self.frame.size.width / 2, self.size.height - (40 + scoreLabel.frame.size.height/2))
-        self.addChild(scoreLabel)
-        
-        let healthLabel = SKLabelNode(fontNamed: "Courier")
-        
-        // 4
-        healthLabel.name = kHealthHudName
-        healthLabel.fontSize = 25
-        
-        // 5
-        healthLabel.fontColor = SKColor.redColor()
-        healthLabel.text = String(format: "Health: %.1f%%", self.shipHealth * 100.0)
-        
-        // 6
-        healthLabel.position = CGPointMake(self.frame.size.width / 2, self.size.height - (80 + healthLabel.frame.size.height / 2))
-        self.addChild(healthLabel)
-    }
+   
     
     
     func makeBulletOfType(bulletType: BulletType) -> SKSpriteNode! {
@@ -745,6 +644,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.MpIncrease(currentTime)
         
+        btAdvertiseSharedInstance.updateOpponentRealTimePos((self.view?.bounds.size.width)!-ship.position.x, y: ship.position.y)
+        
+
         
         //self.moveInvadersForUpdate(currentTime)
         
@@ -821,7 +723,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // 2
             if let data = self.motionManager.accelerometerData {
                 
-                let multiplier = 500.0
+                let multiplier = shipVelocity
                 let x = data.acceleration.x
                 let y = data.acceleration.y
                 ship.physicsBody!.velocity = CGVector(dx: y * multiplier, dy: -x * multiplier )
@@ -1046,78 +948,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    func fireShipBullets() {
-        
-        
-        //let existingBullet = self.childNodeWithName(kShipFiredBulletName)
-        
-        // 1
-        //if existingBullet == nil {
-        
-        //if let ship = self.childNodeWithName(kShipName) {
-        var bullet: SKSpriteNode?
-        if weaponType == BulletType.ShipFired {
-            bullet = self.makeBulletOfType(.ShipFired)
-        }
-            
-        else if weaponType == BulletType.BonusBullet {
-            bullet = self.makeBulletOfType(.BonusBullet)
-        }
-        
-        // 2
-        bullet!.position = CGPoint(x: ship.position.x, y: ship.position.y + ship.frame.size.height + bullet!.frame.size.height / 4)
-        
-        // 3
-        let bulletDestination = CGPoint(x: ship.position.x, y: self.frame.size.height + bullet!.frame.size.height / 2)
-        
-        // 4
-        self.fireBullet(bullet!, toDestination: bulletDestination, withDuration: 1.0, andSoundFileName: "ShipBullet.wav", fromWhom:0)
-        
-        //print(ship.position.x)
-        
-        if weaponType == BulletType.ShipFired {
-            btAdvertiseSharedInstance.update((self.view?.bounds.size.width)!-ship.position.x, y: ship.position.y)
-        }
-            
-        else if weaponType == BulletType.BonusBullet {
-            btAdvertiseSharedInstance.updateBonusBullet((self.view?.bounds.size.width)!-ship.position.x, y: ship.position.y, type: BulletType.BonusBullet.description)
-        }
-        
-        //}
-        //}
-    }
 
-    /*
-    func fireShipBullets() {
-        
-        
-        //let existingBullet = self.childNodeWithName(kShipFiredBulletName)
-        
-        // 1
-        //if existingBullet == nil {
-            
-            //if let ship = self.childNodeWithName(kShipName) {
-                
-                if let bullet = self.makeBulletOfType(.ShipFired) {
-                    
-                    // 2
-                    bullet.position = CGPoint(x: ship.position.x, y: ship.position.y + ship.frame.size.height + bullet.frame.size.height / 4)
-                    
-                    // 3
-                    let bulletDestination = CGPoint(x: ship.position.x, y: self.frame.size.height + bullet.frame.size.height / 2)
-                    
-                    // 4
-                    self.fireBullet(bullet, toDestination: bulletDestination, withDuration: 1.0, andSoundFileName: "ShipBullet.wav", fromWhom:0)
-                    
-                    //print(ship.position.x)
-                    
-                    btAdvertiseSharedInstance.update((self.view?.bounds.size.width)!-ship.position.x, y: ship.position.y)
-                    
-                }
-            //}
-        //}
-    }
-    */
     
     func ApponentFireShipBullets(notification: NSNotification) {
         
@@ -1311,11 +1142,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    func winAlert(){
-        
-
-        
-    }
     
     func hitOpponent(notification: NSNotification){
         
@@ -1346,6 +1172,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 if self.emitter != nil {
                     self.emitter.removeFromParent()
+                }
+                
+                if self.ultimateHint != nil{
+                    self.ultimateHint.removeFromParent()
+                    self.WarningSiren.pause()
+                    
+                    do {
+                        try self.kameCharge = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: NSBundle.mainBundle().pathForResource("kameEmmit", ofType: "wav")!))
+                        
+                        self.kameCharge.play()
+                    } catch {
+                        print(error)
+                    }
+                    
                 }
                 
                 let alert = UIAlertView(title: "",
@@ -1405,6 +1245,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    
+    func realTimePos(notification: NSNotification){
+        
+        
+        let userInfo = notification.userInfo as! Dictionary<String, AnyObject>
+        let string_point: String = userInfo["point"] as! String
+        
+        var fullNameArr = string_point.characters.split {$0 == " "}.map { String($0) }
+        let x: String = fullNameArr[1]
+        //let y: String = fullNameArr[2]
+        
+        let f_x = CGFloat((x as NSString).floatValue);
+        let point = CGPoint(x: f_x, y: (self.view?.bounds.size.height)! - oppoPosHint.size.height)
+        oppoPosHint.runAction(SKAction.moveTo(point, duration: 0.1))
+        //oppoPosHint.position = CGPoint(x: f_x, y: self.frame.size.height - 30);
+
+        
+        
+        //print(f_x);
+        //let f_y = CGFloat((y as NSString).floatValue);
+        
+    }
+    
+    
     func profEmitterActionAtPosition(position: CGPoint) -> SKAction {
         let sksPath = NSBundle.mainBundle().pathForResource("profExplosion", ofType: "sks")
         profemitter = NSKeyedUnarchiver.unarchiveObjectWithFile(sksPath!) as! SKEmitterNode
@@ -1436,8 +1300,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let wait = SKAction.waitForDuration(0.15)
         
         return SKAction.runBlock({ () -> Void in
-       self
-        .     emitter?.runAction(wait)
+            self.self.emitter?.runAction(wait)
         })
     }
     
@@ -1657,8 +1520,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         startMoving = false;
         self.userInteractionEnabled = false
         
-        self.fireShipBullets()
-        
+              
         if(ultimateTimer != nil){
             ultimateTimer.invalidate()
             ultimateTimer = nil
@@ -1666,27 +1528,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ultimateTimer = NSTimer.scheduledTimerWithTimeInterval(0.3, target: self, selector: "update", userInfo: nil, repeats: false)
 
 
-        /*
-        for touch in touches {
-            let location = touch.locationInNode(self)
-            
-            let sprite = SKSpriteNode(imageNamed:"Spaceship")
-            
-            sprite.xScale = 0.5
-            sprite.yScale = 0.5
-            sprite.position = location
-            
-            let action = SKAction.rotateByAngle(CGFloat(M_PI), duration:1)
-            
-            sprite.runAction(SKAction.repeatActionForever(action))
-        
-            //self.addChild(sprite)
-            
-            //btDiscoverySharedInstance.sendToPeripheral();
-            //btAdvertiseSharedInstance.update(location.x, y: location.y)
-            
-        }
-        */
+
         
     }
     override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?)  {
@@ -1776,6 +1618,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         health.text = String(format: "Health: %.1f%%", self.shipHealth * 100)
         
     }
+    
+    
+    func frozenTimerStart(){
+        
+        shipVelocity = 50;
+        frozenTimer = NSTimer(timeInterval: 0.5, target: self, selector: Selector("forzenEffect"), userInfo: 1, repeats: true)
+        NSRunLoop.mainRunLoop().addTimer(frozenTimer, forMode: NSDefaultRunLoopMode)
+        
+    }
+    
+    func burnTimerStart(){
+        
+        burnTimer = NSTimer(timeInterval: 2.0, target: self, selector: Selector("burnEffect"), userInfo: 1, repeats: true)
+        NSRunLoop.mainRunLoop().addTimer(burnTimer, forMode: NSDefaultRunLoopMode)
+
+    }
+    
+    func forzenEffect(){
+        
+        velocityDecrease(25.0)
+    }
+    
+    func burnEffect(){
+        
+        decreaseHealth(5.0);
+        
+    }
+    
+    func velocityDecrease( minus : Double){
+        
+        shipVelocity += minus;
+        
+        if(shipVelocity >= 500.0){
+            shipVelocity = 500.0;
+            
+            let alert = UIAlertView(title: "",
+                message: "DEFROZED!!!",
+                delegate: self,
+                cancelButtonTitle: "OK")
+            
+            alert.show()
+        
+            if(frozenTimer != nil){
+                frozenTimer.invalidate()
+                frozenTimer = nil
+            }
+        }
+    }
+    
+    
     
     // Physics Contact Helpers
     
@@ -1908,15 +1800,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         else if(latesHealth <= 0){
+            
             latestMinusHealth = 0
             latesHealth = (self.view?.bounds.height)!
-            self.profemitter.removeFromParent()
+            
+            if(profemitter != nil){
+                self.profemitter.removeFromParent()
+            }
+            
             
             healthBar.position = CGPoint(x: (self.view?.bounds.size.width)!-2.5, y: (self.view?.bounds.size.height)!/2)
             healthBarBack.position = CGPoint(x: (self.view?.bounds.size.width)!-2.5, y: (self.view?.bounds.size.height)!/2)
             
             //healthBar.position = CGPoint(x: ship.position.x, y: ship.position.y)
             //healthBarBack.position = CGPoint(x: ship.position.x, y: ship.position.y)
+            
+            
+            if self.ultimateHint != nil{
+                self.ultimateHint.removeFromParent()
+                self.WarningSiren.pause()
+                
+                do {
+                    try self.kameCharge = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: NSBundle.mainBundle().pathForResource("kameEmmit", ofType: "wav")!))
+                    
+                    self.kameCharge.play()
+                } catch {
+                    print(error)
+                }
+                
+            }
+            
+            if(burnTimer != nil){
+                burnTimer.invalidate()
+                burnTimer = nil
+            }
             
             self.userInteractionEnabled = false
 
@@ -1928,6 +1845,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             alert.show()
             
         }
+        
+
         healthBar.size = CGSize(width: 5 ,height: latesHealth)
         healthBar.position = CGPoint(x: (self.view?.bounds.size.width)!-2.5, y: (self.view?.bounds.size.height)!/2 - latestMinusHealth/2)
         
@@ -1980,28 +1899,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Game End Helpers
     
     func isGameOver() -> Bool {
-        
-        /*
-        // 1
-        let invader = self.childNodeWithName(kInvaderName)
-        
-        // 2
-        var invaderTooLow = false
-        
-        enumerateChildNodesWithName(kInvaderName) {
-            node, stop in
-            
-            if Float(CGRectGetMinY(node.frame)) <= self.kMinInvaderBottomHeight {
-                
-                invaderTooLow = true
-                stop.memory = true
-            }
-        }
-        
-        // 3
-        let ship = self.childNodeWithName(kShipName)
-        */
-        // 4
+
         return false
     }
     
@@ -2025,45 +1923,4 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     
-    func addSprite(notification: NSNotification) {
-        
-        let userInfo = notification.userInfo as! Dictionary<String, AnyObject>
-        
-        dispatch_async(dispatch_get_main_queue(), {
-            // Set image based on connection status
-            
-            let string_point: String = userInfo["point"] as! String
-            
-            var fullNameArr = string_point.characters.split {$0 == " "}.map { String($0) }
-            let x: String = fullNameArr[0]
-            let y: String = fullNameArr[1]
-            
-            
-            let f_x = CGFloat((x as NSString).floatValue);
-            let f_y = CGFloat((y as NSString).floatValue);
-            
-            
-            let location = CGPointMake(f_x, f_y)
-            
-            
-            let sprite = SKSpriteNode(imageNamed:"Spaceship")
-            
-            sprite.xScale = 0.5
-            sprite.yScale = 0.5
-            sprite.position = location
-            
-            let action = SKAction.rotateByAngle(CGFloat(M_PI), duration:1)
-            
-            sprite.runAction(SKAction.repeatActionForever(action))
-            //print(location)
-            
-            self.addChild(sprite)
-            
-        });
-        
-        
-        
-        //GameScene.addChild(sprite)
-    }
-
-}
+   }

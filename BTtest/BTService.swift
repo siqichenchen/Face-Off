@@ -10,8 +10,11 @@ import Foundation
 import CoreBluetooth
 
 /* Services & Characteristics UUIDs */
-let BLEServiceUUID = CBUUID(string: "035A7775-49AA-42BD-BBDB-E2AE77782966")
-let PositionCharUUID = CBUUID(string: "F48A2C23-BC54-40FC-BED0-60EDDA139F47")
+let BLEServiceUUID = CBUUID(string: "025A7775-49AA-42BD-BBDB-E2AE77782966")
+//let BLEServiceUUID = CBUUID(string: "025A7775-49AA-42BD-BBDB-E2AE77782969")
+let PositionCharUUID = CBUUID(string: "F38A2C23-BC54-40FC-BED0-60EDDA139F47")
+//let PositionCharUUID = CBUUID(string: "F38A2C23-BC54-40FC-BED0-60EDDA139F49")
+
 let BLEServiceChangedStatusNotification = "kBLEServiceChangedStatusNotification"
 
 class BTService: NSObject, CBPeripheralDelegate {
@@ -21,9 +24,6 @@ class BTService: NSObject, CBPeripheralDelegate {
   init(initWithPeripheral peripheral: CBPeripheral) {
     super.init()
     
-    
-   // peer = MCPeerID(displayName: UIDevice.currentDevice().name)
-
     self.peripheral = peripheral
     self.peripheral?.delegate = self
   }
@@ -127,7 +127,8 @@ class BTService: NSObject, CBPeripheralDelegate {
         
         let out: String = NSString(data:characteristic.value!, encoding:NSUTF8StringEncoding)! as String
         
-        print(out)
+        //print(out)
+        //print("!@@@@#@#@#")
         
         var fullNameArr = out.characters.split {$0 == " "}.map { String($0) }
         
@@ -144,8 +145,26 @@ class BTService: NSObject, CBPeripheralDelegate {
             NSNotificationCenter.defaultCenter().postNotificationName("getLocation", object: self, userInfo: connectionDetails)
             
         }
-
-        
+        else if(fullNameArr[0] == "ultimateHint"){
+            
+            NSNotificationCenter.defaultCenter().postNotificationName("getUltimateHint", object: self, userInfo: connectionDetails)
+            
+        }
+        else if(fullNameArr[0] == "hitOpponent"){
+            
+            NSNotificationCenter.defaultCenter().postNotificationName("hitOpponent", object: self, userInfo: connectionDetails)
+            
+        }
+        else if(fullNameArr[0] == "bonusHitOpponent"){
+            
+            NSNotificationCenter.defaultCenter().postNotificationName("bonusHitOpponent", object: self, userInfo: connectionDetails)
+            
+        }
+        else if(fullNameArr[0] == "realTimePos"){
+            
+            NSNotificationCenter.defaultCenter().postNotificationName("realTimePos", object: self, userInfo: connectionDetails)
+            
+        }
         
   
         /*

@@ -28,42 +28,31 @@ class MainScene: SKScene,UINavigationControllerDelegate, UIImagePickerController
     
     var 製造角色按鈕: SKNode! = nil
     var 進入遊戲按鈕: SKNode! = nil
+    var 角色: SKSpriteNode! = nil
     var testImage: SKNode! = nil
     let background: SKNode! = SKSpriteNode(imageNamed: "spaceship1.jpg")
     
     override func didMoveToView(view: SKView) {
         
-        testImage = SKSpriteNode(color: UIColor.redColor().colorWithAlphaComponent(0.3), size: CGSize(width: 200, height: 40))
-        testImage.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)+CGFloat(75.0))
-        addChild(testImage)
-
-        let testtext = SKLabelNode(fontNamed:"Chalkduster")
-        testtext.text = "Test Image";
-        testtext.fontSize = 14;
-        testtext.position = CGPoint(x:CGFloat(0),y:CGFloat(-5))
-        testImage.addChild(testtext)
-        
-        background.position = CGPoint(x: frame.midX, y: frame.midY)
+        background.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
         background.xScale = 0.75
         background.yScale = 0.75
         background.zPosition = -100
         addChild(background)
         
-        
-  
         製造角色按鈕 = SKSpriteNode(color: UIColor.redColor().colorWithAlphaComponent(0.3), size: CGSize(width: 200, height: 40))
-        製造角色按鈕.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)+CGFloat(25.0))
+        製造角色按鈕.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)+CGFloat(50.0))
         addChild(製造角色按鈕)
         let 製造角色文字 = SKLabelNode(fontNamed:"Chalkduster")
         製造角色文字.text = "Create a character";
         製造角色文字.fontSize = 14;
         製造角色文字.position = CGPoint(x:CGFloat(0),y:CGFloat(-5))
         製造角色按鈕.addChild(製造角色文字)
-
+        
         
         
         進入遊戲按鈕 = SKSpriteNode(color: UIColor.redColor().colorWithAlphaComponent(0.3), size: CGSize(width: 200, height: 40))
-        進入遊戲按鈕.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)-CGFloat(25.0))
+        進入遊戲按鈕.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)-CGFloat(0.0))
         addChild(進入遊戲按鈕)
         
         let 進入遊戲文字 = SKLabelNode(fontNamed:"Chalkduster")
@@ -73,18 +62,32 @@ class MainScene: SKScene,UINavigationControllerDelegate, UIImagePickerController
         
         進入遊戲按鈕.addChild(進入遊戲文字)
         
+        loadCharacter()
+    }
+    
+    func loadCharacter(){
+        if let character = CharacterManager.getCharacterFromLocalStorage() {
+            if 角色 != nil && 角色.parent != nil {
+                角色.removeFromParent()
+            }
+            角色 = SKSpriteNode(texture: SKTexture(image: character))
+            角色.position = CGPoint(x:CGRectGetMidX(self.frame),y:CGRectGetMidY(self.frame)-CGFloat(50.0))
+            角色.setScale(0.1)
+            addChild(角色)
+            finalImg = character
+        }
+        
     }
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
         if let location = touches.first?.locationInNode(self){
             if 製造角色按鈕.containsPoint(location){
                 製造角色按鈕.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
-              
-                takePictures()
-                print("fuckthecamara")
+                print("sdfd")
+                self.takePictures()
                 
             }
                 
-            
+                
             else if 進入遊戲按鈕.containsPoint(location){
                 進入遊戲按鈕.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
                 
@@ -92,158 +95,68 @@ class MainScene: SKScene,UINavigationControllerDelegate, UIImagePickerController
                 removeAllChildren()
                 let nextScene = PlayModeScene(size: scene!.size)
                 nextScene.scaleMode = .AspectFill
-                
+                nextScene.Img = finalImg
                 scene?.view?.presentScene(nextScene, transition: transition)
             }
-            else if testImage.containsPoint(location){
-                testImage.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
-              print("test Image")
-//                let Texture = SKTexture(image: finalImg)
-//                let TransNode = SKSpriteNode(texture:Texture)
-//                TransNode.position = CGPoint(x:CGRectGetMidX(self.frame)+CGFloat(50.0),y:CGRectGetMidY(self.frame))
-//                addChild(TransNode)
-//                
-            }
-
+            
             
         }
     }
     
+    
     func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : AnyObject]) {
-        
-        
-        
-        /*let selectedImage: UIImage! = photoView.image
-        
-        let fileManager = NSFileManager.defaultManager()
-        
-        let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as String
-        
-        let filePathToWrite = "\(paths)/User_Profile_Image.jpg"
-        
-        // let imageData: NSData = UIImagePNGRepresentation(selectedImage)!
-        let jpgImageData = UIImageJPEGRepresentation(selectedImage, 1.0)
-        
-        fileManager.createFileAtPath(filePathToWrite, contents: jpgImageData, attributes: nil)
-        
-        // Check file saved successfully
-        let getImagePath = (paths as NSString).stringByAppendingPathComponent("User_Profile_Image.jpg")
-        if (fileManager.fileExistsAtPath(getImagePath))
-        {
-        print("FILE AVAILABLE");
-        
-        //Pick Image and Use accordingly
-        // let imageis: UIImage = UIImage(contentsOfFile: getImagePath)!
-        
-        // let data: NSData = UIImagePNGRepresentation(imageis)
-        
-        }
-        else
-        {
-        print("FILE NOT AVAILABLE");
-        
-        }*/
-        
-        
-        // layerView.image = UIImage(named: ("player"))
-        
-        print("vvv")
-        
-        finalImg = info[UIImagePickerControllerOriginalImage] as? UIImage
-        imgForPlayer = finalImg
-        
-        var photoView: UIImageView = UIImageView()
-        //add layer to imageView
-        let logo = UIImage(named: "headdd")!
-        let mask = CALayer()
-        
-        photoView.frame = self.frame
-        print("123")
-        mask.frame = self.frame
-        mask.contents = logo.CGImage
+        print("tttttt")
+        finalImg = info[UIImagePickerControllerEditedImage] as? UIImage
+        print("rrrrrr")
+        let photoView = UIImageView(image: finalImg)
+        photoView.layer.borderWidth = 3
+        photoView.layer.cornerRadius = photoView.frame.size.height/2;
         photoView.layer.masksToBounds = true
-        
-        photoView.image = finalImg
-        print("123")
-        photoView.layer.mask = mask
+        print("wwwwww")
         
         var layer1: CALayer = CALayer()
-        //var layer2: CALayer = CALayer()
         
-        print("123")
         layer1 = photoView.layer
-        print("188")
-        UIGraphicsBeginImageContext(finalImg.size)
+        UIGraphicsBeginImageContext(CGSize(width:photoView.frame.size.height,height:photoView.frame.size.height))
         layer1.renderInContext(UIGraphicsGetCurrentContext()!)
-        print("123")
         finalImg = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
-        /*layerView.image = UIImage(named: ("player"))
-        layer2 = layerView.layer
-        layer2.frame.size = photoView.frame.size
-        UIGraphicsBeginImageContext(photoView.bounds.size)
-        layer1.renderInContext(UIGraphicsGetCurrentContext()!)
-        layer2.renderInContext(UIGraphicsGetCurrentContext()!)
-        imgForPlayer = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        photoView.image = imgForPlayer
-        photoView.layer.mask = nil
+        CharacterManager.saveCharacterToLocalStorage(finalImg)
         
-        picker.dismissViewControllerAnimated(true, completion: nil)*/
-        
-        //imageForPlayer 是头像加宇航服，UIImage格式
-        //finalImg 是只有图像，UIImage格式
-        picker.dismissViewControllerAnimated(true, completion: gotoNext)
-    }
-    func gotoNext(){
-        let transition = SKTransition.revealWithDirection(SKTransitionDirection.Up, duration: 0.5)
-        
-        let nextScene = PlayModeScene(size: scene!.size)
-        nextScene.scaleMode = .AspectFill
-        print("3333")
-        
-        
-        nextScene.Img=finalImg
-        print("4444")
-        
-        scene?.view?.presentScene(nextScene, transition: transition)
-        
-        print("hahaha")
-        
+        picker.dismissViewControllerAnimated(true, completion: imagePickingFinished)
     }
     
+    func imagePickingFinished(){
+        loadCharacter()
+    }
+    
+    
+    
     func takePictures(){
-        //use camera
-        //var mpTimer = NSTimer.scheduledTimerWithTimeInterval(5, target: self, selector: "imagePickerController:",userInfo: nil,repeats:true)
-        layerView = UIImageView()
+        
         let imagePicker =  UIImagePickerController()
-        imagePicker.modalPresentationStyle = .CurrentContext
+        //imagePicker.modalPresentationStyle = .CurrentContext
         imagePicker.delegate = self
         imagePicker.sourceType = .Camera //UIImagePickerControllerSourceTypeCamera
         imagePicker.allowsEditing = true
         imagePicker.showsCameraControls = true;
         
-        //add astronaut layer to camera
-        layerView.image = UIImage(named: ("astro"))
-        layerView.frame.size.width = self.view!.frame.size.width
+        layerView = UIImageView()
+        layerView.frame.size.width = self.view!.frame.size.height
         layerView.frame.size.height = self.view!.frame.size.height
-        
-        
+        layerView.layer.position.y = 203
+        layerView.layer.borderWidth = 3
+        layerView.layer.cornerRadius = (self.view!.frame.size.height/2)
+        //layerView.backgroundColor = UIColor.grayColor()
         
         imagePicker.cameraDevice = UIImagePickerControllerCameraDevice.Front
         imagePicker.cameraOverlayView = layerView //3.0以后可以直接设置cameraOverlayView为overlay
-        //imagePicker.modalTransitionStyle = UIModalTransitionStyleCoverVertical
         let  vc:UIViewController = self.view!.window!.rootViewController!       //.window?.rootViewController
-        
+        print("qqqqqqqqq")
         vc.presentViewController(imagePicker, animated: true, completion:nil)
-        
-        
-        print("0000")
-        
-        
         
     }
     
-
+    
 }

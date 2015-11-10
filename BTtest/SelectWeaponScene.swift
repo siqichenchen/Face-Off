@@ -6,6 +6,9 @@
 //  Copyright (c) 2015 Liang. All rights reserved.
 //
 
+
+//need constrant confirm button
+
 import SpriteKit
 
 class SelectWeaponScene: SKScene {
@@ -31,34 +34,35 @@ class SelectWeaponScene: SKScene {
     
     var count: Int = 0;
     var did_tap: Bool = false;
+    var finish_choosing: Bool = false;
     
     var did_shrink: NSInteger = 0;
     var arrayOfStrings: [String] = ["Bomb", "Bow", "Grenade", "Katachi", "Cannon"]
+    var arrayOfDescription: [String] = ["BombSkill", "BowSkill", "GrenadeSkill", "KatachiSkill", "CannonSkill"]
+    
+    var descrioptionLable: SKLabelNode! = nil
     
     var Img: UIImage! = nil
-
-    
     
     override func didMoveToView(view: SKView) {
         
         background.position = CGPoint(x: frame.midX, y: frame.midY)
         background.zPosition = -100
-        background.xScale = 0.6
-        background.yScale = 0.6
+        background.setScale(0.8)
         addChild(background)
         
+        descrioptionLable = SKLabelNode (fontNamed: "Chalkduster")
+        descrioptionLable.position = CGPoint(x:CGRectGetMidX(self.frame), y:CGRectGetMaxY(self.frame)*0.25)
+        descrioptionLable.fontSize = 20
+        addChild(descrioptionLable)
         
         forward_btn = SKSpriteNode(imageNamed:"Forward")
-//        forward_btn.xScale = 1.5
-//        forward_btn.yScale = 1.5
-        forward_btn.position = CGPoint(x:CGRectGetMidX(self.frame)*1.6, y:CGRectGetMidY(self.frame))
+        forward_btn.position = CGPoint(x:CGRectGetMaxX(self.frame)-CGFloat(50.0), y:CGRectGetMidY(self.frame))
         forward_btn.name = "forward_btn"
         forward_btn.zPosition = 1.0
         
         back_btn = SKSpriteNode(imageNamed:"Back")
-//        back_btn.xScale = 1.5
-//        back_btn.yScale = 1.5
-        back_btn.position = CGPoint(x:CGRectGetMidX(self.frame)*0.4, y:CGRectGetMidY(self.frame))
+        back_btn.position = CGPoint(x:CGRectGetMinX(self.frame)+CGFloat(50.0), y:CGRectGetMidY(self.frame))
         back_btn.name = "back_btn"
         back_btn.zPosition = 1.0
         
@@ -122,17 +126,20 @@ class SelectWeaponScene: SKScene {
         self.addChild(Weapon1)
         self.addChild(Weapon2)
         self.addChild(Weapon3)
-        
-       // self.addChild(select_btn)
+
         self.addChild(confirm_btn)
         
         for var i=0; i<arrayOfStrings.count; i++ {
             var weapon: SKNode! = nil
             weapon = SKSpriteNode(imageNamed:arrayOfStrings[i])
+           
+            //just for initial scene
             
             if(i==0){
                 weapon.xScale = 0.7
                 weapon.yScale = 0.7
+                
+                
             }
             else{
                 weapon.xScale = 0.35
@@ -141,7 +148,7 @@ class SelectWeaponScene: SKScene {
             
             weapon.position = CGPoint(x:CGRectGetMidX(self.frame)+(CGFloat(i)*120), y:CGRectGetMidY(self.frame));
             weapon.name = String(i)
-            
+  
             WEAPONS.append(weapon)
             
             self.addChild(weapon)
@@ -235,6 +242,8 @@ class SelectWeaponScene: SKScene {
                             
                             if(eachChild.name==String(count)){
                                 enlarge_animation(eachChild, RorL:1, distance: 120, duration:0.5)
+                                
+
                             }
                             if(eachChild.name != String(count)){
                                 shrink_animation(eachChild, RorL:1, distance: 120, duration:0.5)
@@ -262,7 +271,6 @@ class SelectWeaponScene: SKScene {
                     }
                     
                     
-                    
                     if(count < 0) {
                         count = arrayOfStrings.count-1;
                     }
@@ -274,9 +282,17 @@ class SelectWeaponScene: SKScene {
             
         
             if confirm_btn.containsPoint(location) {
+                
+                guard finish_choosing else{
+                    print("please finish your choosing!")
+                    return
+                    
+                }
+                
+                
                 //confirm_btn.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
                 let nextScene = GameScene(size: scene!.size)
-                nextScene.scaleMode = SKSceneScaleMode.AspectFill
+                nextScene.scaleMode = SKSceneScaleMode.ResizeFill
                 let transition = SKTransition.revealWithDirection(SKTransitionDirection.Up, duration: 0.5)
                 removeAllChildren()
                 nextScene.userData = NSMutableDictionary()
@@ -304,6 +320,7 @@ class SelectWeaponScene: SKScene {
                             enlarge_animation(eachChild, RorL:1, distance: move_dis, duration:0.5)
                         }
                         
+                        descrioptionLable.text = arrayOfDescription[count]
                         
                         
                         switch(select_count){
@@ -329,6 +346,8 @@ class SelectWeaponScene: SKScene {
                         
                         if(select_count == 3){
                             select_count = 0
+                            finish_choosing = true
+                            print("finish choosing")
                         }
                         
                         

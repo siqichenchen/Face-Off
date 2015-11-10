@@ -40,21 +40,13 @@ class GameViewController: UIViewController {
 
 
         
-        let scene = MainScene(size: view.bounds.size)
         let skView = self.view as! SKView
         skView.showsFPS = true
         skView.showsNodeCount = true
         
         /* Sprite Kit applies additional optimizations to improve rendering performance */
         skView.ignoresSiblingOrder = true
-        
-        /* Set the scale mode to scale to fit the window */
-        scene.scaleMode = .AspectFill
-        skView.presentScene(scene)
-        
-        
-        
-        
+
         // Pause the view (and thus the game) when the app is interrupted or backgrounded
         NSNotificationCenter.defaultCenter().addObserver(self, selector: "handleApplicationWillResignActive:", name: UIApplicationWillResignActiveNotification, object: nil)
         
@@ -62,7 +54,14 @@ class GameViewController: UIViewController {
 
         // Watch Bluetooth connection
         NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("connectionChanged:"), name: BLEServiceChangedStatusNotification, object: nil)
-//
+
+        
+        /* Set the scale mode to scale to fit the window */
+        let scene = MainScene(size: view.bounds.size)
+        scene.scaleMode =  .AspectFill
+        skView.presentScene(scene)
+        
+        
 //        // Start the Bluetooth advertise process
 //        btAdvertiseSharedInstance
 //        
@@ -104,7 +103,9 @@ class GameViewController: UIViewController {
                     alert.delegate = self
                     alert.addButtonWithTitle("OK")
                     alert.addButtonWithTitle("Cancel")
-                    alert.show()
+                    //alert.show()
+                    
+                    NSNotificationCenter.defaultCenter().postNotificationName("beginFight", object: self)
                     
                     
                 } else {

@@ -78,11 +78,11 @@ class BTAdvertise: NSObject, CBPeripheralManagerDelegate, CBPeripheralDelegate {
     func peripheralManager(peripheral: CBPeripheralManager, didAddService service: CBService, error: NSError?) {
         
         if (error != nil) {
-            print("サービス追加失敗！ error: \(error)")
+            print("Service追加失敗！ error: \(error)")
             return
         }
         
-        print("サービス追加成功！")
+        print("Service追加成功！")
         //self.peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey:[BLEServiceUUID],CBAdvertisementDataLocalNameKey:UIDevice.currentDevice().name])
         self.peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey:[BLEServiceUUID]])
 
@@ -197,6 +197,20 @@ class BTAdvertise: NSObject, CBPeripheralManagerDelegate, CBPeripheralDelegate {
         
     }
     
+    
+    func updateOpponentRealTimePos(x: CGFloat, y:CGFloat) {
+        
+        //var pointToSend = CGPointMake(x, y)
+        let space = " "
+        let string_x_y = "realTimePos " + x.description + space + y.description
+        let data = string_x_y.dataUsingEncoding(NSUTF8StringEncoding)
+        
+        //let data = NSData(bytes: &pointToSend, length: sizeof(CGPoint))
+        
+        self.characteristic.value = data;
+        self.peripheralManager.updateValue(data!, forCharacteristic: self.characteristic, onSubscribedCentrals: nil)
+        
+    }
     
     func peripheralManager(peripheral: CBPeripheralManager, didReceiveWriteRequests requests: [CBATTRequest]) {
         

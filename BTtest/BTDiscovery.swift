@@ -8,6 +8,7 @@
 
 import Foundation
 import CoreBluetooth
+import UIKit
 
 let btDiscoverySharedInstance = BTDiscovery();
 
@@ -19,21 +20,22 @@ class BTDiscovery: NSObject, CBCentralManagerDelegate {
   override init() {
 	super.init()
 	
-	let centralQueue = dispatch_queue_create("com.Faceoff", DISPATCH_QUEUE_SERIAL)
+	let centralQueue = dispatch_queue_create("com.raywenderlich", DISPATCH_QUEUE_SERIAL)
 	centralManager = CBCentralManager(delegate: self, queue: centralQueue)
     
   }
   
   func startScanning() {
     if let central = centralManager {
-      central.scanForPeripheralsWithServices([BLEServiceUUID], options: nil)
+        central.scanForPeripheralsWithServices([BLEServiceUUID], options: nil)
+        //central.scanForPeripheralsWithServices(nil, options: nil)
     }
   }
     
 
   var bleService: BTService? {
     didSet {
-        print("!!!!?!?!?!?!?")
+        //print("!!!!?!?!?!?!?")
       if let service = self.bleService {
         service.startDiscoveringServices()
       }
@@ -63,10 +65,14 @@ class BTDiscovery: NSObject, CBCentralManagerDelegate {
     // Be sure to retain the peripheral or it will fail during connection.
     
     print("Find device!")
+    //print(peripheral.description)
+    //print(advertisementData)
+    print(peripheral.name)
+    //print(peripheral.identifier.UUIDString)
 
     
     self.peripheralBLE = peripheral
-    // Connect to peripheral
+    //Connect to peripheral
     centralManager!.connectPeripheral(peripheral, options: nil)
     
     // Validate peripheral information
@@ -142,31 +148,31 @@ class BTDiscovery: NSObject, CBCentralManagerDelegate {
         break
       
     case CBCentralManagerState.Unauthorized:
-        print("Hello new Print with new Unauthorized");
+        print("Hello new Print with new line2");
 
       // Indicate to user that the iOS device does not support BLE.
       break
       
     case CBCentralManagerState.Unknown:
-        print("Hello new Print with new Unknown");
+        print("Hello new Print with new line3");
 
       // Wait for another event
         break
       
     case CBCentralManagerState.PoweredOn:
-        print("Hello new Print with new PoweredOn");
+        print("Hello new Print with new line4");
 
         self.startScanning()
         break
       
     case CBCentralManagerState.Resetting:
-        print("Hello new Print with new Resetting");
+        print("Hello new Print with new line5");
 
         self.clearDevices()
         break
       
     case CBCentralManagerState.Unsupported:
-        print("Hello new Print with new Unsupported");
+        print("Hello new Print with new line6");
 
         break
     }

@@ -49,8 +49,7 @@ class PlayModeScene: SKScene {
 
         background.position = CGPoint(x: frame.midX, y: frame.midY)
         background.scene?.size = frame.size
-        background.xScale = 0.8
-        background.yScale = 0.8
+        background.setScale(1.0)
         background.zPosition = -100
         addChild(background)
 
@@ -71,8 +70,8 @@ class PlayModeScene: SKScene {
                 選擇雙人遊戲按鈕.runAction(SKAction.playSoundFileNamed(FaceoffGameSceneEffectAudioName.ButtonAudioName.rawValue, waitForCompletion: false))
                 print("multiplayer")
                 let nextScene = BuildConnectionScene(size: scene!.size)
+                nextScene.scaleMode = SKSceneScaleMode.ResizeFill
                 nextScene.Img = Img
-                nextScene.scaleMode = SKSceneScaleMode.AspectFill
                 transitionForNextScene(nextScene)
                 
             }else if 返回按鈕.containsPoint(location){
